@@ -20,26 +20,32 @@ case = case.faces("+Z").shell(-wall)
 basePlane = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
 
 #Hexagonal lattice
-hexOffset = 5;
+hexmask = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
+hexOffset = wall + 1.2;
 hexSize = 10;
-hexSpacing = 1;
-a = int((length - 2 * hexOffset) / (hexSize + hexSpacing) * 0.9 * 0.5) + 1
-b = int((width - 2 * hexOffset) / (hexSize + hexSpacing) * 0.5)
-x = - a * (hexSize + hexSpacing) * 0.9;
+hexSpacing = 0.6;
+x = -length/2 + 2;
 zig = True
-while (x < a * (hexSize + hexSpacing)* 0.9):
+while (x < length/2):
 #for i in range(4):
-    y = - b * (hexSize + hexSpacing)
+    y = - width/2
     if (zig):
         y += (hexSpacing + hexSize)/2
-    while (y < b * (hexSize + hexSpacing)):
+    while (y < width/2 + hexSize +hexSpacing):
     #for j in range(4):
-        case = case.faces("<Z").workplane()\
+    #if True:
+        hexmask = hexmask\
             .pushPoints([(x,y)])\
-            .polygon(6, hexSize).cutBlind(- wall - 2);
+            .polygon(6, hexSize).extrude(- wall - 2);
         y += (hexSize + hexSpacing);
     zig = not zig;
-    x += (hexSize + hexSpacing) * 0.9;
+    x += (hexSize + hexSpacing) * 0.9; 
+
+offsetMask = cq.Workplane("XY").box(length - hexOffset*2, width - hexOffset*2, heigth + 10, (True, True, False)).edges("|Z").fillet(fillet)
+hexmask = hexmask.intersect(offsetMask)
+del offsetMask
+case = case.cut(hexmask)
+del hexmask
 
 
 #Screw Posts
