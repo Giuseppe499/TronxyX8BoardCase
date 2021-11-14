@@ -1,28 +1,30 @@
 import cadquery as cq
+from cadquery import exporters
 
 #Box Variables
-length = 120
-width = 100
-heigth = 50
+length = 140
+width = 110
+heigth = 55
 fillet = 5
-wall = 1.8
+wall = 2.4
 
 #Screw Holes Variables
 pHeigth = 10;
-pOuterRadius = 6/2;
-pInnerRadius = 3/2;
+pOuterRadius = 8/2;
+pInnerRadius = 4/2;
 dX = 102
 dY = 82
 
 case = cq.Workplane("XY").box(length, width, heigth, (True, True, False)).edges("|Z").fillet(fillet)
-case = case.faces("+Z").shell(-wall)
+
+case = case.shell(-wall)
 
 basePlane = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
 
 #Hexagonal lattice
-hexOffset = wall + 1.2;
+hexOffset = max(wall, fillet);
 hexSize = 10;
-hexSpacing = 0.6;
+hexSpacing = 1.2;
 
 def hexMask(workplane, startX, endX, startY, endY):
     hexmask = workplane;
@@ -49,6 +51,12 @@ def hexMask(workplane, startX, endX, startY, endY):
 workplane = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
 hexmask = hexMask(workplane, -length/2 + 2, length/2, - width/2, width/2 + hexSize +hexSpacing);
 offsetMask = cq.Workplane("XY").box(length - hexOffset*2, width - hexOffset*2, heigth + 10, (True, True, False)).edges("|Z").fillet(fillet)
+hexmask = hexmask.intersect(offsetMask)
+case = case.cut(hexmask)
+del hexmask
+
+workplane = cq.Workplane("XY").copyWorkplane(case.faces(">Z").workplane());
+hexmask = hexMask(workplane, -length/2 + 2, length/2, - width/2, width/2 + hexSize +hexSpacing);
 hexmask = hexmask.intersect(offsetMask)
 case = case.cut(hexmask)
 del offsetMask
@@ -87,9 +95,6 @@ del offsetMask
 del hexmask
 
 
-
-
-
 #Screw Posts
 case = case.union(basePlane.rect(dX, dY, forConstruction=True).vertices()\
         .circle(pOuterRadius).extrude(-pHeigth))
@@ -97,3 +102,5 @@ screwHoles = basePlane.rect(dX, dY, forConstruction=True).vertices()\
         .circle(pInnerRadius).extrude(-pHeigth)
 case = case.cut(screwHoles)
 del screwHoles
+
+exporters.export(case, 'case_last.stl')
