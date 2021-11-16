@@ -6,14 +6,14 @@ length = 140
 width = 110
 heigth = 55
 fillet = 5
-wall = 2.4
+wall = 1.8
 
 #Screw Holes Variables
 pHeigth = 10;
 pOuterRadius = 8/2;
 pInnerRadius = 4/2;
-dX = 102
-dY = 82
+dX = 101
+dY = 81
 
 #Lid Variables
 lidHeigth = max(wall, fillet)
@@ -25,10 +25,9 @@ shellMask = case
 
 basePlane = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
 
-'''
 #Hexagonal lattice
 hexOffset = max(wall, fillet);
-hexSize = 10;
+hexSize = 15;
 hexSpacing = 1.2;
 
 def hexMask(workplane, startX, endX, startY, endY):
@@ -54,14 +53,14 @@ def hexMask(workplane, startX, endX, startY, endY):
 
 # Z hex cut
 workplane = cq.Workplane("XY").copyWorkplane(case.faces("<Z").workplane());
-hexmask = hexMask(workplane, -length/2 + 2, length/2, - width/2, width/2 + hexSize +hexSpacing);
+hexmask = hexMask(workplane, -length/2 - 3, length/2, - width/2, width/2 + hexSize +hexSpacing);
 offsetMask = cq.Workplane("XY").box(length - hexOffset*2, width - hexOffset*2, heigth + 10, (True, True, False)).edges("|Z").fillet(fillet)
 hexmask = hexmask.intersect(offsetMask)
 case = case.cut(hexmask)
 del hexmask
 
 workplane = cq.Workplane("XY").copyWorkplane(case.faces(">Z").workplane());
-hexmask = hexMask(workplane, -length/2 + 2, length/2, - width/2, width/2 + hexSize +hexSpacing);
+hexmask = hexMask(workplane, -length/2 - 3, length/2, - width/2, width/2 + hexSize +hexSpacing);
 hexmask = hexmask.intersect(offsetMask)
 case = case.cut(hexmask)
 del offsetMask
@@ -85,7 +84,7 @@ del hexmask
 
 #X hex cut
 workplane = cq.Workplane("XY").copyWorkplane(case.faces("<X").workplane());
-hexmask = hexMask(workplane, -width/2 , width/2, 0, heigth + hexSize + hexSpacing);
+hexmask = hexMask(workplane, -width/2 - 3.2 , width/2, -5, heigth + hexSize + hexSpacing);
 offsetMask = cq.Workplane("XY").workplane(offset=hexOffset).box(length + 10, width - hexOffset*2, heigth - hexOffset*2, (True, True, False))
 hexmask = hexmask.intersect(offsetMask)
 case = case.cut(hexmask)
@@ -93,21 +92,21 @@ case = case.cut(hexmask)
 del hexmask
 
 workplane = cq.Workplane("XY").copyWorkplane(case.faces(">X").workplane());
-hexmask = hexMask(workplane, -length/2, length/2, 0, heigth + hexSize + hexSpacing);
+hexmask = hexMask(workplane, -width/2 - 3.2, width/2, -5, heigth + hexSize + hexSpacing);
 hexmask = hexmask.intersect(offsetMask)
 case = case.cut(hexmask)
 del offsetMask
 del hexmask
-'''
 
 (lid,case) = case.faces(">Z").workplane(-lidHeigth).split(keepTop=True,keepBottom=True).all()
 
 #Lid-Case Connectors
 cThickness = wall
+cHeigth = 5
 cWidth = 15
-cClearance = 0.6
-cPocket = 1.2
-cCutHeigth = 5
+cClearance = 1.2
+cPocket = 0.6
+cCutHeigth = 10
 cCutMargin = wall
 
 workplane = cq.Workplane("XY").copyWorkplane(lid.faces("<Z").workplane());
@@ -115,16 +114,16 @@ workplane = cq.Workplane("XY").copyWorkplane(lid.faces("<Z").workplane());
 connector1 = workplane.center(length/2 - (wall + cThickness)/2, 0).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).workplane(offset=lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector1 = connector1.intersect(insideMask)
 connector1 = connector1.center(- wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = cCutMargin + cClearance/2).rect(cThickness, cWidth - cClearance).loft()\
-    .center(wall/2 - cPocket/2, 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = cCutHeigth - cClearance).center(-wall/2 + cPocket/2, 0).rect(cThickness, cWidth - cClearance).loft()
+    .workplane(offset = cHeigth + cCutMargin + cClearance/2).rect(cThickness, cWidth - cClearance).loft()\
+    .center(cPocket/2 , 0).rect(cThickness + cPocket, cWidth - cClearance)\
+    .workplane(offset = cCutHeigth - cClearance).center(-wall/2 + cPocket/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
 connector2 = workplane.center(-length/2 + (wall + cThickness)/2, 0).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).workplane(offset=lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector2 = connector2.cut(connector2.cut(insideMask))
 connector2 = connector2.center( wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = cCutMargin + cClearance/2).rect(-cThickness, cWidth - cClearance).loft()\
-    .center(-wall/2 + cPocket/2, 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = cCutHeigth - cClearance).center(wall/2 - cPocket/2, 0).rect(cThickness, cWidth - cClearance).loft()
+    .workplane(offset = cHeigth + cCutMargin + cClearance/2).rect(-cThickness, cWidth - cClearance).loft()\
+    .center(-cPocket/2, 0).rect(cThickness + cPocket, cWidth - cClearance)\
+    .workplane(offset = cCutHeigth - cClearance).center(wall/2 - cPocket/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
 lid = lid.union(connector1, clean = False).union(connector2, clean = False)
 del connector1, connector2
@@ -133,14 +132,14 @@ del connector1, connector2
 #Case Connectors cut
 caseShellMask = shellMask.faces(">Z").workplane(-lidHeigth).split(keepBottom=True)
 workplane = cq.Workplane("YZ").workplane(offset = length/2 - wall).center(0, heigth - lidHeigth)
-boxToCut = workplane.center(0, -cCutMargin - cCutHeigth/2).box(cWidth ,cCutHeigth, wall + fillet)
-marginBox = workplane.center(0, -cCutMargin - cCutHeigth/2).box(cWidth + 2 * cCutMargin,cCutHeigth + 2 * cCutMargin, wall + fillet)
+boxToCut = workplane.center(0, -cHeigth -cCutMargin - cCutHeigth/2).box(cWidth ,cCutHeigth, wall + fillet)
+marginBox = workplane.center(0, -cHeigth -cCutMargin - cCutHeigth/2).box(cWidth + 2 * cCutMargin,cCutHeigth + 2 * cCutMargin, wall + fillet)
 marginBox = marginBox.intersect(caseShellMask)
 case = case.union(marginBox).cut(boxToCut)
 
 workplane = cq.Workplane("YZ").workplane(offset = -length/2 + wall).center(0, heigth - lidHeigth)
-boxToCut = workplane.center(0, -cCutMargin - cCutHeigth/2).box(cWidth ,cCutHeigth, wall + fillet)
-marginBox = workplane.center(0, -cCutMargin - cCutHeigth/2).box(cWidth + 2 * cCutMargin,cCutHeigth + 2 * cCutMargin, wall + fillet)
+boxToCut = workplane.center(0, -cHeigth -cCutMargin - cCutHeigth/2).box(cWidth ,cCutHeigth, wall + fillet)
+marginBox = workplane.center(0, -cHeigth -cCutMargin - cCutHeigth/2).box(cWidth + 2 * cCutMargin,cCutHeigth + 2 * cCutMargin, wall + fillet)
 marginBox = marginBox.intersect(caseShellMask)
 case = case.union(marginBox).cut(boxToCut)
 
@@ -150,7 +149,6 @@ del boxToCut
 marginBox = cq.Workplane("XY").workplane(offset = heigth - lidHeigth -cCutMargin/2).box(length, width, cCutMargin)
 marginBox = marginBox.intersect(caseShellMask)
 case = case.union(marginBox)
-
 del marginBox
 
 #Rotate and translate lid
