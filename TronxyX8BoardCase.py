@@ -2,11 +2,11 @@ import cadquery as cq
 from cadquery import exporters
 
 #Box Variables
-length = 140
+length = 130
 width = 110
-heigth = 55
+heigth = 65
 fillet = 5
-wall = 1.8
+wall = 2.4
 
 #Screw Holes Variables
 pHeigth = 10;
@@ -75,6 +75,7 @@ case = case.cut(hexmask)
 
 del hexmask
 
+
 workplane = cq.Workplane("XY").copyWorkplane(case.faces(">Y").workplane());
 hexmask = hexMask(workplane, -length/2, length/2, 0, heigth + hexSize + hexSpacing);
 hexmask = hexmask.intersect(offsetMask)
@@ -100,30 +101,49 @@ del hexmask
 
 (lid,case) = case.faces(">Z").workplane(-lidHeigth).split(keepTop=True,keepBottom=True).all()
 
+#Lid Inset
+iHeigth = 5
+iWall = 1.8
+iClearance =0.6
+
+# iMargin = cq.Workplane("XY").box(length, width, heigth, (True, True, False)).edges("|Z").fillet(fillet)
+# iMargin = iMargin.faces(">Z").shell(-wall -iClearance -iWall)
+# iMargin = iMargin.faces(">Z").workplane(-lidHeigth).split(keepTop=True)
+# iMargin = iMargin.intersect(insideMask)
+# lid = lid.union(iMargin)
+# del iMargin
+
+inset = cq.Workplane("XY").box(length, width, heigth, (True, True, False)).edges("|Z").fillet(fillet)
+inset = inset.cut(inset.faces(">Z").shell(-wall -iClearance)).faces(">Z").shell(-iWall)
+inset = inset.faces(">Z").workplane(-lidHeigth -iHeigth).split(keepTop=True)
+inset = inset.intersect(insideMask)
+lid = lid.union(inset)
+del inset
+
 #Lid-Case Connectors
-cThickness = wall
+cThickness = 3
 cHeigth = 5
 cWidth = 15
 cClearance = 1.2
-cPocket = 0.6
+cPocket = wall
 cCutHeigth = 10
 cCutMargin = wall
 
-workplane = cq.Workplane("XY").copyWorkplane(lid.faces("<Z").workplane());
+workplane = cq.Workplane("XY").copyWorkplane(lid.faces(">Z").workplane());
 
-connector1 = workplane.center(length/2 - (wall + cThickness)/2, 0).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).workplane(offset=lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
+connector1 = workplane.center(length/2 - (wall + cThickness)/2, 0).workplane(offset=0).rect(cThickness + wall, cWidth - cClearance).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector1 = connector1.intersect(insideMask)
 connector1 = connector1.center(- wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = cHeigth + cCutMargin + cClearance/2).rect(cThickness, cWidth - cClearance).loft()\
+    .workplane(offset = -cHeigth - cCutMargin - cClearance/2).rect(cThickness, cWidth - cClearance).loft()\
     .center(cPocket/2 , 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = cCutHeigth - cClearance).center(-wall/2 + cPocket/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
+    .workplane(offset = -cCutHeigth + cClearance).center( - cPocket/2 - cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
-connector2 = workplane.center(-length/2 + (wall + cThickness)/2, 0).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).workplane(offset=lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
+connector2 = workplane.center(-length/2 + (wall + cThickness)/2, 0).workplane(offset=0).rect(cThickness + wall, cWidth - cClearance).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector2 = connector2.cut(connector2.cut(insideMask))
 connector2 = connector2.center( wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = cHeigth + cCutMargin + cClearance/2).rect(-cThickness, cWidth - cClearance).loft()\
+    .workplane(offset = -cHeigth - cCutMargin - cClearance/2).rect(-cThickness, cWidth - cClearance).loft()\
     .center(-cPocket/2, 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = cCutHeigth - cClearance).center(wall/2 - cPocket/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
+    .workplane(offset = -cCutHeigth + cClearance).center(cPocket/2 + cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
 lid = lid.union(connector1, clean = False).union(connector2, clean = False)
 del connector1, connector2
@@ -143,7 +163,30 @@ marginBox = workplane.center(0, -cHeigth -cCutMargin - cCutHeigth/2).box(cWidth 
 marginBox = marginBox.intersect(caseShellMask)
 case = case.union(marginBox).cut(boxToCut)
 
+#Case USB and SD cut
+cutBottomMargin = 5
+cutSideMargin = 45
+cutWidth = 15
+cutLength = 45
+workplane = cq.Workplane("XZ").workplane(offset = width/2 - wall).center(-length/2 + cutSideMargin + cutLength/2, cutBottomMargin)
+boxToCut = workplane.center(0, cutWidth/2).box(cutLength, cutWidth, wall + fillet)
+marginBox = workplane.center(0, cutWidth/2).box(cutLength + 2 * cCutMargin, cutWidth + 2 * cCutMargin, wall + fillet)
+marginBox = marginBox.intersect(caseShellMask)
+case = case.union(marginBox).cut(boxToCut)
+
+#Case LCD Cables cut
+cutUpperMargin = 15
+cutSideMargin = 15
+cutWidth = 25
+cutLength = 15
+workplane = cq.Workplane("YZ").workplane(offset = -length/2 + wall).center(width/2 - cutSideMargin - cutLength/2, heigth - cutUpperMargin)
+boxToCut = workplane.center(0, -cutWidth/2).box(cutLength, cutWidth, wall + fillet)
+marginBox = workplane.center(0, -cutWidth/2).box(cutLength + 2 * cCutMargin,cutWidth + 2 * cCutMargin, wall + fillet)
+marginBox = marginBox.intersect(caseShellMask)
+case = case.union(marginBox).cut(boxToCut)
+
 del boxToCut
+
 
 #case upper margin
 marginBox = cq.Workplane("XY").workplane(offset = heigth - lidHeigth -cCutMargin/2).box(length, width, cCutMargin)
