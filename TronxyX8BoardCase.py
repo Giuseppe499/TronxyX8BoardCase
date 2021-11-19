@@ -2,9 +2,9 @@ import cadquery as cq
 from cadquery import exporters
 
 #Box Variables
-length = 130
+length = 140
 width = 110
-heigth = 65
+heigth = 60
 fillet = 5
 wall = 2.4
 
@@ -125,6 +125,7 @@ cThickness = 3
 cHeigth = 5
 cWidth = 15
 cClearance = 1.2
+cOverhangCompensation = 0.3
 cPocket = wall
 cCutHeigth = 10
 cCutMargin = wall
@@ -134,16 +135,16 @@ workplane = cq.Workplane("XY").copyWorkplane(lid.faces(">Z").workplane());
 connector1 = workplane.center(length/2 - (wall + cThickness)/2, 0).workplane(offset=0).rect(cThickness + wall, cWidth - cClearance).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector1 = connector1.intersect(insideMask)
 connector1 = connector1.center(- wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = -cHeigth - cCutMargin - cClearance/2).rect(cThickness, cWidth - cClearance).loft()\
+    .workplane(offset = -cHeigth - cCutMargin - cClearance/2 - cOverhangCompensation).rect(cThickness, cWidth - cClearance).loft()\
     .center(cPocket/2 , 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = -cCutHeigth + cClearance).center( - cPocket/2 - cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
+    .workplane(offset = -cCutHeigth + cClearance + cOverhangCompensation).center( - cPocket/2 - cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
 connector2 = workplane.center(-length/2 + (wall + cThickness)/2, 0).workplane(offset=0).rect(cThickness + wall, cWidth - cClearance).workplane(offset=-lidHeigth).rect(cThickness + wall, cWidth - cClearance).loft()
 connector2 = connector2.cut(connector2.cut(insideMask))
 connector2 = connector2.center( wall/2, 0).rect(cThickness, cWidth - cClearance)\
-    .workplane(offset = -cHeigth - cCutMargin - cClearance/2).rect(-cThickness, cWidth - cClearance).loft()\
+    .workplane(offset = -cHeigth - cCutMargin - cClearance/2 - cOverhangCompensation).rect(-cThickness, cWidth - cClearance).loft()\
     .center(-cPocket/2, 0).rect(cThickness + cPocket, cWidth - cClearance)\
-    .workplane(offset = -cCutHeigth + cClearance).center(cPocket/2 + cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
+    .workplane(offset = -cCutHeigth + cClearance + cOverhangCompensation).center(cPocket/2 + cClearance/2, 0).rect(cThickness - cClearance, cWidth - cClearance).loft()
 
 lid = lid.union(connector1, clean = False).union(connector2, clean = False)
 del connector1, connector2
