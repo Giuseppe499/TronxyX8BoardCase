@@ -167,8 +167,8 @@ case = case.union(marginBox).cut(boxToCut)
 #Case USB and SD cut
 cutBottomMargin = 5
 cutSideMargin = 45
-cutWidth = 15
-cutLength = 45
+cutWidth = 25
+cutLength = 50
 workplane = cq.Workplane("XZ").workplane(offset = width/2 - wall).center(-length/2 + cutSideMargin + cutLength/2, cutBottomMargin)
 boxToCut = workplane.center(0, cutWidth/2).box(cutLength, cutWidth, wall + fillet)
 marginBox = workplane.center(0, cutWidth/2).box(cutLength + 2 * cCutMargin, cutWidth + 2 * cCutMargin, wall + fillet)
